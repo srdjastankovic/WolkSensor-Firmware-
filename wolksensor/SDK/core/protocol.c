@@ -13,6 +13,7 @@
 #include "actuators.h"
 #include "commands_dependencies.h"
 #include "util_conversions.h"
+#include "cayenne_lpp.h"
 
 static char tmp[128];
 
@@ -43,6 +44,8 @@ bool append_busy(circular_buffer_t* message_buffer)
 static uint16_t serialize_sensor_reading(sensor_readings_t* sensor_reading, char* buffer)
 {
 	int16_t size = 0;
+	
+	cayenne_lpp_t lpp = { CAYENNE_LPP_MAX_BUFFER_SIZE };
 
 	size = sprintf_P(buffer, PSTR("R:%lu,"), sensor_reading->timestamp);
 	
@@ -51,7 +54,33 @@ static uint16_t serialize_sensor_reading(sensor_readings_t* sensor_reading, char
 	{
 		if(sensor_reading->values[i] != SENSOR_VALUE_NOT_SET)
 		{
-			size += sprintf_P(buffer + size, PSTR("%c:%.1f,"), sensors[i].id, sensor_reading->values[i]);
+			if( strstr(sensors[i].id, 'T') != NULL )
+			{
+				cayenne_lpp_add_temperature(&lpp, 1, sensor_reading->values[i]);
+				for (uint8_t i = 0; i < lpp.cursor; ++i) {
+					    LOG_PRINT(1, PSTR("\n\r\n\r %02X \n\r\n\r"), lpp.buffer[i]);
+						size += sprintf_P(buffer + size, PSTR("%02x"), lpp.buffer[i]);
+			    }
+			    cayenne_lpp_reset(&lpp);
+			}
+			else if( strstr(sensors[i].id, 'H') != NULL )
+			{
+				cayenne_lpp_add_relative_humidity(&lpp, 1, sensor_reading->values[i]);
+				for (uint8_t i = 0; i < lpp.cursor; ++i) {
+					LOG_PRINT(1, PSTR("\n\r\n\r %02X \n\r\n\r"), lpp.buffer[i]);
+					size += sprintf_P(buffer + size, PSTR("%02x"), lpp.buffer[i]);
+				}
+				cayenne_lpp_reset(&lpp);
+			}
+			else if( strstr(sensors[i].id, 'P') != NULL )
+			{
+				cayenne_lpp_add_barometric_pressure(&lpp, 1, sensor_reading->values[i]);
+				for (uint8_t i = 0; i < lpp.cursor; ++i) {
+					LOG_PRINT(1, PSTR("\n\r\n\r %02X \n\r\n\r"), lpp.buffer[i]);
+					size += sprintf_P(buffer + size, PSTR("%02x"), lpp.buffer[i]);
+				}
+				cayenne_lpp_reset(&lpp);
+			}
 		}
 	}
 	

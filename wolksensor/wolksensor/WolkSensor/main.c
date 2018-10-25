@@ -28,6 +28,7 @@
 #include <util/delay.h>
 
 // OS
+#include "cayenne_lpp.h"
 #include "Sensors/sensor.h"
 #include "Sensors/batteryADC.h"
 #include "Sensors/LSM303.h"

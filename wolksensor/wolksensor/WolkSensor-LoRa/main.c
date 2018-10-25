@@ -54,6 +54,7 @@
 #include "nonvolatile_memory.h"
 #include "simplelink.h"
 #include "flc_api.h"
+#include "cayenne_lpp.h"
 
 /* flash code length -- this is loaded in flash by the linker scripts */ 
 const uint32_t ProgramLength __attribute__ ((section (".length"))) = 0x12345678;
@@ -185,6 +186,14 @@ static void wire_mqtt_communication_protocol(void)
 	communication_protocol.get_communication_result = get_mqtt_communication_result;
 }
 
+static void wire_cayenne_lpp_communication_protocol(void)
+{
+	communication_protocol.send_sensor_readings_and_system_data = NULL;//mqtt_protocol_send_sensor_readings_and_system_data;
+	communication_protocol.receive_commands = NULL;//mqtt_protocol_receive_commands;
+	communication_protocol.disconnect = NULL;//mqtt_protocol_disconnect;
+	communication_protocol.get_communication_result = NULL;//get_mqtt_communication_result;
+}
+
 static bool process(void)
 {
 	bool poll = poll_usb_state() || waiting_movement_sensor_enable_timeout();
@@ -280,7 +289,11 @@ int main(void)
 	reset_system_error.type = SYSTEM_RESET;
 	reset_system_error.data.system_reset_reason = reset_reason;
 	add_system_error(&reset_system_error);
-	
+
+	//Init cayenneLPP
+	//cayenne_lpp_t lpp = { 0 };
+	//cayenne_lpp_add_temperature(&lpp, 1, 1);
+
 	for (;;) 
 	{
 		bool keep_runing = process();
@@ -311,4 +324,3 @@ int main(void)
 	
 	return 0;
 }
-
